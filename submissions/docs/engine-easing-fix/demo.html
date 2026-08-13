@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bug Fix: ease-in-out Easing Value — EaseMotion Engine</title>
+    <meta name="description" content="Demonstrates the incorrect vs correct ease-in-out cubic-bezier mapping in the EaseMotion motion engine parser." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+
+    <h1>Bug Fix: <code style="font-size:1.4rem">ease-in-out</code> Easing Value</h1>
+
+    <p class="subtitle">
+      In <code>easemotion/engine/parser.js</code>, the <code>'ease-in-out'</code> key was
+      mapped to <code>cubic-bezier(0.4, 0, 0.2, 1)</code> — the <em>exact same value</em> as the
+      default <code>'ease'</code> curve. This made both tokens visually identical, defeating the
+      purpose of specifying <code>ease-in-out</code> in an <code>em=""</code> attribute.
+    </p>
+
+    <!-- Live comparison -->
+    <div class="panel-row">
+
+      <!-- BUGGY panel -->
+      <div class="panel buggy" id="panel-buggy">
+        <h2>❌ Before (Buggy)</h2>
+        <p class="label">cubic-bezier(0.4, 0, 0.2, 1)&nbsp;&nbsp;← same as 'ease'</p>
+        <div class="track" id="track-buggy">
+          <div class="box box-buggy" title="This is identical to 'ease'">EASE</div>
+        </div>
+        <div class="code-block"><span class="ctx">const EASING_MAP = {</span>
+  <span class="ctx">'ease':        'cubic-bezier(0.4, 0, 0.2, 1)',</span>
+  <span class="del">'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',  // ← BUG: same as ease</span>
+<span class="ctx">};</span></div>
+      </div>
+
+      <!-- CORRECT panel -->
+      <div class="panel correct" id="panel-correct">
+        <h2>✅ After (Fixed)</h2>
+        <p class="label">cubic-bezier(0.42, 0, 0.58, 1)&nbsp;&nbsp;← symmetric ease-in-out</p>
+        <div class="track" id="track-correct">
+          <div class="box box-correct" title="Correct symmetric ease-in-out">EIO</div>
+        </div>
+        <div class="code-block"><span class="ctx">const EASING_MAP = {</span>
+  <span class="ctx">'ease':        'cubic-bezier(0.4, 0, 0.2, 1)',</span>
+  <span class="add">'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1)', // ← FIX: symmetric</span>
+<span class="ctx">};</span></div>
+      </div>
+
+    </div>
+
+    <!-- Play button -->
+    <div class="btn-group">
+      <button class="btn" id="btn-play" onclick="runDemo()">▶ Play Animation</button>
+      <button class="btn" style="background:linear-gradient(135deg,#475569,#334155)" onclick="resetDemo()">↺ Reset</button>
+    </div>
+
+    <!-- Full diff -->
+    <div class="diff-card">
+      <h2>📋 Proposed Fix — <code>easemotion/engine/parser.js</code></h2>
+      <div class="code-block">
+<span class="ctx">/** Canonical easing aliases → CSS values */</span>
+<span class="ctx">const EASING_MAP = {</span>
+<span class="ctx">  'ease':        'cubic-bezier(0.4, 0, 0.2, 1)',</span>
+<span class="ctx">  'ease-in':     'cubic-bezier(0.4, 0, 1, 1)',</span>
+<span class="ctx">  'ease-out':    'cubic-bezier(0, 0, 0.2, 1)',</span>
+<span class="del">  'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',   // BUG: duplicate of 'ease'</span>
+<span class="add">  'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1)', // FIX: standard symmetric ease-in-out</span>
+<span class="ctx">  'linear':      'linear',</span>
+<span class="ctx">  'spring':      'cubic-bezier(0.34, 1.56, 0.64, 1)',</span>
+<span class="ctx">  'bounce':      'cubic-bezier(0.34, 1.56, 0.64, 1)',</span>
+<span class="ctx">  'snap':        'cubic-bezier(0.77, 0, 0.175, 1)',</span>
+<span class="ctx">};</span>
+      </div>
+    </div>
+
+    <footer>
+      EaseMotion CSS — Bug Fix Submission &bull;
+      Submitted under <code>submissions/docs/engine-easing-fix/</code>
+    </footer>
+
+    <script>
+      function runDemo() {
+        document.getElementById('track-buggy').classList.add('playing');
+        document.getElementById('track-correct').classList.add('playing');
+      }
+
+      function resetDemo() {
+        // Remove class, then force a reflow so the transition fires fresh next play
+        const buggy   = document.getElementById('track-buggy');
+        const correct = document.getElementById('track-correct');
+        buggy.classList.remove('playing');
+        correct.classList.remove('playing');
+        void buggy.offsetWidth;   // reflow
+        void correct.offsetWidth;
+      }
+    </script>
+
+  </body>
+</html>
